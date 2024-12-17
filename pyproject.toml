@@ -1,0 +1,19 @@
+[project]
+name = "trashnet-classification"
+version = "0.1.0"
+description = "A classification model for trashnet dataset"
+requires-python = ">=3.9"
+
+dependencies = [
+    "torch",
+    "torchvision",
+    "torchmetrics",
+    "pytorch-lightning",
+    "pandas",
+    "numpy",
+    "scikit-learn",
+    "matplotlib",
+    "seaborn",
+    "wandb",
+]
+

@@ -1,0 +1,13 @@
+name: CI Test
+on:
+    push:
+        branches:
+            - dev
+    pull_request:
+        branches:
+            - dev
+jobs:
+    unit-test:
+        runs-on: ubuntu-latest
+        steps:
+            - run: "echo 'Running Unit Test..." 
