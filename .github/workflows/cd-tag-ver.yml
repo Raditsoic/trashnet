@@ -28,9 +28,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install huggingface-hub
 
-      - name: Login to Huggingface
-        run: huggingface-cli login --token ${{ secrets.HF_TOKEN }}
-
       - name: Extract Tag Version
         id: extract-version
         run: |
@@ -38,12 +35,19 @@ jobs:
           VERSION=${TAG#v}
           echo "version=$VERSION" >> $GITHUB_ENV
 
+      - name: Create Directory Structure and Copy Files
+        run: |
+          mkdir -p "models/trashnet_v${{ env.version }}"
+          
+          cp "models/model_${{ env.version }}/model_${{ env.version }}.pth" "models/trashnet_v${{ env.version }}/trashnet_v${{ env.version }}.pth"
+          cp "models/model_${{ env.version }}/config.json" "models/trashnet_v${{ env.version }}/config.json"
+          cp "models/model_${{ env.version }}/metrics.json" "models/trashnet_v${{ env.version }}/metrics.json"
+          cp "models/model_${{ env.version }}/README.md" "models/trashnet_v${{ env.version }}/README.md"
+
       - name: Upload Tagged Model
         run: |
-          echo "Uploading model version ${{ env.version }} to a new branch..."
+          echo "Uploading model version ${{ env.version }}..."
           huggingface-cli upload \
             --repo-type=model \
             --commit-message "feat: Release version ${{ env.version }}" \
-            --branch "v${{ env.version }}" \
-            --token ${{ secrets.HF_TOKEN }} \
-            ${{ secrets.HF_REPO_NAME }} "models/model_${{ env.version }}"
+            ${{ secrets.HF_REPO_NAME }} "models/trashnet_v${{ env.version }}"

@@ -31,15 +31,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install huggingface-hub
 
-      - name: Login to Huggingface
-        run: huggingface-cli login --token ${{ secrets.HF_TOKEN }}
-
+      - name: Determine Latest Model Version
+        id: get-latest-version
+        run: |
+          LATEST_MODEL=$(ls models | grep -E '^model_[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          echo "Latest model directory: $LATEST_MODEL"
+          echo "latest_model=$LATEST_MODEL" >> $GITHUB_ENV
+      
+      - name: Copy and Rename Model File
+        run: |
+          cp "models/${{ env.latest_model }}/${{ env.latest_model }}.pth" "trashnet.pth"
+          cp "models/${{ env.latest_model }}/config.json" "config.json"
+          cp "models/model_${{ env.latest_model }}/metrics.json" "metrics.json"
+          cp "models/model_${{ env.latest_model }}/README.md" "README.md"
+  
       - name: Upload Latest Model
         run: |
-          echo "Uploading the latest model to the 'main' branch..."
+          echo "Uploading the latest model to root..."
           huggingface-cli upload \
             --repo-type=model \
             --commit-message "feat: Update main with the latest model" \
-            --branch main \
-            --token ${{ secrets.HF_TOKEN }} \
-  
+            ${{ secrets.HF_REPO_NAME }} "trashnet.pth" "config.json" "metrics.json" "README.md"
