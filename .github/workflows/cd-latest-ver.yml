@@ -53,4 +53,5 @@ jobs:
             ${{ secrets.HF_REPO_NAME }} models/latest \
             --repo-type=model \
             --commit-message "feat: Update main with the latest model" \
+            --token ${{ secrets.HF_TOKEN }}
             

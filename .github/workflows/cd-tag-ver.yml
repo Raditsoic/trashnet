@@ -38,7 +38,6 @@ jobs:
       - name: Create Directory Structure and Copy Files
         run: |
           mkdir -p "models/trashnet_v${{ env.version }}"
-          
           cp "models/model_${{ env.version }}/model_${{ env.version }}.pth" "models/trashnet_v${{ env.version }}/trashnet_v${{ env.version }}.pth"
           cp "models/model_${{ env.version }}/config.json" "models/trashnet_v${{ env.version }}/config.json"
           cp "models/model_${{ env.version }}/metrics.json" "models/trashnet_v${{ env.version }}/metrics.json"
@@ -50,4 +49,5 @@ jobs:
           huggingface-cli upload \
             --repo-type=model \
             --commit-message "feat: Release version ${{ env.version }}" \
+            --token ${{ secrets.HF_TOKEN }} \
             ${{ secrets.HF_REPO_NAME }} "models/trashnet_v${{ env.version }}"
