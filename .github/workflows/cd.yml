@@ -41,6 +41,7 @@ jobs:
                   huggingface-cli upload \
                   --repo-type=model \
                   --commit-message "feat: Release version $VERSION" \
+                  --token ${{ secrets.HF_TOKEN }} \
                   ${{ secrets.HF_REPO_NAME }} $MODEL_DIR
 
                   echo "Model version $VERSION uploaded to ${{ secrets.HF_REPO_NAME }}."
