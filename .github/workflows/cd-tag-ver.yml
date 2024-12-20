@@ -50,4 +50,4 @@ jobs:
             --repo-type=model \
             --commit-message "feat: Release version ${{ env.version }}" \
             --token ${{ secrets.HF_TOKEN }} \
-            ${{ secrets.HF_REPO_NAME }} "models/trashnet_v${{ env.version }}"
+            ${{ secrets.HF_REPO_NAME }} "models/trashnet_v${{ env.version }}" "models/trashnet_v${{ env.version }}"
