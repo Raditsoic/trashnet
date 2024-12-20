@@ -1,0 +1,42 @@
+name: CD for Latest Versions
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  push-latest-model:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          lfs: true  
+
+      - name: Pull LFS objects
+        run: git lfs pull  
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Hugging Face Hub
+        run: |
+          python -m pip install --upgrade pip
+          pip install huggingface-hub
+
+      - name: Login to Huggingface
+        run: huggingface-cli login --token ${{ secrets.HF_TOKEN }}
+
+      - name: Upload Latest Model
+        run: |
+          echo "Uploading the latest model to the 'main' branch..."
+          huggingface-cli upload \
+            --repo-type=model \
+            --commit-message "feat: Update main with the latest model" \
+            --branch main \
+            --token ${{ secrets.HF_TOKEN }} \
+  
