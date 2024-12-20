@@ -17,6 +17,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          lfs: true  
+
+      - name: Pull LFS objects
+        run: git lfs pull  
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -35,33 +40,34 @@ jobs:
       - name: Determine Trigger
         id: determine-trigger
         run: |
-          if [[ $GITHUB_REF == refs/heads/main ]]; then
+          if [[ "$GITHUB_REF" == refs/heads/main ]]; then
             echo "trigger=main" >> $GITHUB_ENV
-          elif [[ $GITHUB_REF == refs/tags/v* ]]; then
-            TAG=$(basename $GITHUB_REF)
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            TAG=$(basename "$GITHUB_REF")
             echo "trigger=tag" >> $GITHUB_ENV
             echo "version=${TAG#v}" >> $GITHUB_ENV
           fi
 
       - name: Upload Model to Hugging Face
         run: |
-          MODEL_DIR="models/model_${{ env.version }}"
-          if [[ ${{ env.trigger }} == "main" ]]; then
-            # Latest
+          echo "Trigger: ${{ env.trigger }}"
+          if [[ "${{ env.trigger }}" == "main" ]]; then
             echo "Uploading the latest model to the 'main' branch..."
             huggingface-cli upload \
               --repo-type=model \
               --commit-message "feat: Update main with the latest model" \
               --branch main \
               --token ${{ secrets.HF_TOKEN }} \
-              ${{ secrets.HF_REPO_NAME }} $MODEL_DIR
-          elif [[ ${{ env.trigger }} == "tag" ]]; then
-            # Tag Versioning
+              ${{ secrets.HF_REPO_NAME }} "models/latest_model"
+          elif [[ "${{ env.trigger }}" == "tag" ]]; then
             echo "Uploading model version ${{ env.version }} to a new branch..."
             huggingface-cli upload \
               --repo-type=model \
               --commit-message "feat: Release version ${{ env.version }}" \
               --branch "v${{ env.version }}" \
               --token ${{ secrets.HF_TOKEN }} \
-              ${{ secrets.HF_REPO_NAME }} $MODEL_DIR
+              ${{ secrets.HF_REPO_NAME }} "models/model_${{ env.version }}"
+          else
+            echo "Unknown trigger. Exiting."
+            exit 1
           fi
