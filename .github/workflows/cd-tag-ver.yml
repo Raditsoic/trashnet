@@ -1,0 +1,53 @@
+name: CD for Tagged Versions
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  push-tagged-model:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          lfs: true  
+
+      - name: Pull LFS objects
+        run: git lfs pull  
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Hugging Face Hub
+        run: |
+          python -m pip install --upgrade pip
+          pip install huggingface-hub
+
+      - name: Extract Tag Version
+        id: extract-version
+        run: |
+          TAG=$(basename "$GITHUB_REF")
+          VERSION=${TAG#v}
+          echo "version=$VERSION" >> $GITHUB_ENV
+
+      - name: Create Directory Structure and Copy Files
+        run: |
+          mkdir -p "models/trashnet_v${{ env.version }}"
+          cp "models/model_${{ env.version }}/model_${{ env.version }}.pth" "models/trashnet_v${{ env.version }}/trashnet_v${{ env.version }}.pth"
+          cp "models/model_${{ env.version }}/config.json" "models/trashnet_v${{ env.version }}/config.json"
+          cp "models/model_${{ env.version }}/metrics.json" "models/trashnet_v${{ env.version }}/metrics.json"
+          cp "models/model_${{ env.version }}/README.md" "models/trashnet_v${{ env.version }}/README.md"
+
+      - name: Upload Tagged Model
+        run: |
+          echo "Uploading model version ${{ env.version }}..."
+          huggingface-cli upload \
+            --repo-type=model \
+            --commit-message "feat: Release version ${{ env.version }}" \
+            --token ${{ secrets.HF_TOKEN }} \
+            ${{ secrets.HF_REPO_NAME }} "models/trashnet_v${{ env.version }}" "models/trashnet_v${{ env.version }}"
