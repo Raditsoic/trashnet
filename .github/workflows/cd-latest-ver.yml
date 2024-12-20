@@ -40,15 +40,17 @@ jobs:
       
       - name: Copy and Rename Model File
         run: |
-          cp "models/${{ env.latest_model }}/${{ env.latest_model }}.pth" "trashnet.pth"
-          cp "models/${{ env.latest_model }}/config.json" "config.json"
-          cp "models/${{ env.latest_model }}/metrics.json" "metrics.json"
-          cp "models/${{ env.latest_model }}/README.md" "README.md"
+          mkdir -p "models/latest"
+          cp "models/${{ env.latest_model }}/${{ env.latest_model }}.pth" "models/latest/trashnet.pth"
+          cp "models/${{ env.latest_model }}/config.json" "models/latest/config.json"
+          cp "models/${{ env.latest_model }}/metrics.json" "models/latest/metrics.json"
+          cp "models/${{ env.latest_model }}/README.md" "models/latest/README.md"
   
       - name: Upload Latest Model
         run: |
           echo "Uploading the latest model to root..."
           huggingface-cli upload \
+            ${{ secrets.HF_REPO_NAME }} models/latest \
             --repo-type=model \
             --commit-message "feat: Update main with the latest model" \
-            ${{ secrets.HF_REPO_NAME }} "trashnet.pth" "config.json" "metrics.json" "README.md"
+            
