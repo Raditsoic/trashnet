@@ -42,8 +42,8 @@ jobs:
         run: |
           cp "models/${{ env.latest_model }}/${{ env.latest_model }}.pth" "trashnet.pth"
           cp "models/${{ env.latest_model }}/config.json" "config.json"
-          cp "models/model_${{ env.latest_model }}/metrics.json" "metrics.json"
-          cp "models/model_${{ env.latest_model }}/README.md" "README.md"
+          cp "models/${{ env.latest_model }}/metrics.json" "metrics.json"
+          cp "models/${{ env.latest_model }}/README.md" "README.md"
   
       - name: Upload Latest Model
         run: |
