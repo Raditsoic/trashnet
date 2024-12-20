@@ -1,9 +1,9 @@
 name: CD to Huggingface and WandB
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - main
-  pull_request:
+    tags:
+      - 'v*'
     branches:
       - main
 
@@ -27,8 +27,24 @@ jobs:
 
           - name: Login to Huggingface
             run: |
-              huggingface-cli login --token ${{ secrets.HG_TOKEN }}
+              huggingface-cli login --token ${{ secrets.HF_TOKEN }}
 
-          # - name: Push to Huggingface
-          #   run: |
-          #     python scripts/push_to_hf.py
+          - name: Push to huggingface
+            run: |
+              TAG=$(git describe --tags)
+              VERSION=${TAG#v}
+
+              MODEL_DIR="models/model_${VERSION}"
+              if [ -d "$MODEL_DIR" ]; then
+                  echo "Uploading model version $VERSION from $MODEL_DIR..."
+  
+                  huggingface-cli upload \
+                  --repo-type=model \
+                  --commit-message "feat: Release version $VERSION" \
+                  ${{ secrets.HF_REPO_NAME }} $MODEL_DIR
+
+                  echo "Model version $VERSION uploaded to ${{ secrets.HF_REPO_NAME }}."
+              else
+                  echo "Model directory $MODEL_DIR not found."
+              fi
+              

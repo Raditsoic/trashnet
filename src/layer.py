@@ -16,35 +16,6 @@ class Layer:
     def set_params(self, params):
         pass
 
-class Convolutional(Layer):
-    def __init__(self, num_filters, filter_size, stride=1, padding=0):
-        super().__init__()
-        self.num_filters = num_filters
-        self.filter_size = filter_size
-        self.stride = stride
-        self.padding = padding
-        self.filters = np.random.randn(num_filters, filter_size, filter_size) / (filter_size * filter_size)
-        self.biases = np.zeros((num_filters, 1))
-        self.d_filters = None
-        self.d_biases = None
-        
-    def forward(self, X):
-        # Implementation of convolution operation
-        pass
-        
-    def backward(self, dY):
-        # Implementation of backward pass
-        pass
-        
-    def get_params(self):
-        return {
-            'filters': self.filters,
-            'biases': self.biases
-        }
-        
-    def set_params(self, params):
-        self.filters = params['filters']
-        self.biases = params['biases']
 
 class Dense(Layer):
     def __init__(self, num_neurons):
@@ -73,21 +44,6 @@ class Dense(Layer):
         self.weights = params['weights']
         self.biases = params['biases']
 
-class MaxPooling(Layer):
-    def __init__(self, pool_size, stride):
-        super().__init__()
-        self.pool_size = pool_size
-        self.stride = stride
-        self.cache = None
-        
-    def forward(self, X):
-        # Implementation of max pooling
-        pass
-        
-    def backward(self, dY):
-        # Implementation of backward pass
-        pass
-
 class Flatten(Layer):
     def forward(self, X):
         self.last_input_shape = X.shape
@@ -104,12 +60,11 @@ class Activation(Layer):
     def forward(self, X):
         if self.activation_function == 'relu':
             return np.maximum(0, X)
-        # Add other activation functions as needed
         
     def backward(self, dY):
         if self.activation_function == 'relu':
             return dY * (self.last_input > 0)
-        # Add other activation functions as needed
+   
 
 class Dropout(Layer):
     def __init__(self, rate):
@@ -126,6 +81,163 @@ class Dropout(Layer):
     def backward(self, dY):
         return dY * self.mask / (1 - self.rate)
 
+import numpy as np
+
+class Layer:
+    def __init__(self):
+        self.last_input = None
+        
+    def forward(self, X):
+        raise NotImplementedError
+        
+    def backward(self, dY):
+        raise NotImplementedError
+        
+    def get_params(self):
+        return {}
+        
+    def set_params(self, params):
+        pass
+
+class Convolutional(Layer):
+    def __init__(self, num_filters, filter_size, stride=1, padding=0):
+        super().__init__()
+        self.num_filters = num_filters
+        self.filter_size = filter_size
+        self.stride = stride
+        self.padding = padding
+        self.filters = np.random.randn(num_filters, filter_size, filter_size) / (filter_size * filter_size)
+        self.biases = np.zeros((num_filters, 1))
+        self.d_filters = None
+        self.d_biases = None
+        
+    def _pad_input(self, X):
+        if self.padding == 0:
+            return X
+        return np.pad(X, ((0,0), (self.padding,self.padding), (self.padding,self.padding)), mode='constant')
+        
+    def forward(self, X):
+        self.last_input = X
+        batch_size, height, width = X.shape
+        
+        # Apply padding
+        X_padded = self._pad_input(X)
+        padded_height, padded_width = X_padded.shape[1:]
+        
+        # Calculate output dimensions
+        out_height = (padded_height - self.filter_size) // self.stride + 1
+        out_width = (padded_width - self.filter_size) // self.stride + 1
+        
+        # Initialize output
+        output = np.zeros((batch_size, self.num_filters, out_height, out_width))
+        
+        # Perform convolution
+        for i in range(0, out_height):
+            for j in range(0, out_width):
+                h_start = i * self.stride
+                h_end = h_start + self.filter_size
+                w_start = j * self.stride
+                w_end = w_start + self.filter_size
+                
+                receptive_field = X_padded[:, h_start:h_end, w_start:w_end]
+                
+                for k in range(self.num_filters):
+                    output[:, k, i, j] = np.sum(
+                        receptive_field * self.filters[k], axis=(1,2)
+                    ) + self.biases[k]
+        
+        return output
+        
+    def backward(self, dY):
+        batch_size = self.last_input.shape[0]
+        X_padded = self._pad_input(self.last_input)
+        
+        # Initialize gradients
+        self.d_filters = np.zeros_like(self.filters)
+        self.d_biases = np.zeros_like(self.biases)
+        dX_padded = np.zeros_like(X_padded)
+        
+        # Calculate gradients
+        for i in range(dY.shape[2]):
+            for j in range(dY.shape[3]):
+                h_start = i * self.stride
+                h_end = h_start + self.filter_size
+                w_start = j * self.stride
+                w_end = w_start + self.filter_size
+                
+                receptive_field = X_padded[:, h_start:h_end, w_start:w_end]
+                
+                for k in range(self.num_filters):
+                    self.d_filters[k] += np.sum(
+                        receptive_field * dY[:, k, i, j][:, np.newaxis, np.newaxis],
+                        axis=0
+                    )
+                    self.d_biases[k] += np.sum(dY[:, k, i, j])
+                    dX_padded[:, h_start:h_end, w_start:w_end] += (
+                        self.filters[k] * dY[:, k, i, j][:, np.newaxis, np.newaxis]
+                    )
+        
+        # Remove padding from dX if necessary
+        if self.padding == 0:
+            return dX_padded
+        return dX_padded[:, self.padding:-self.padding, self.padding:-self.padding]
+
+class MaxPooling(Layer):
+    def __init__(self, pool_size, stride):
+        super().__init__()
+        self.pool_size = pool_size
+        self.stride = stride
+        self.cache = None
+        
+    def forward(self, X):
+        self.last_input = X
+        batch_size, height, width = X.shape
+        
+        # Calculate output dimensions
+        out_height = (height - self.pool_size) // self.stride + 1
+        out_width = (width - self.pool_size) // self.stride + 1
+        
+        # Initialize output and cache for max positions
+        output = np.zeros((batch_size, out_height, out_width))
+        self.cache = np.zeros_like(X)
+        
+        # Perform max pooling
+        for i in range(out_height):
+            for j in range(out_width):
+                h_start = i * self.stride
+                h_end = h_start + self.pool_size
+                w_start = j * self.stride
+                w_end = w_start + self.pool_size
+                
+                pool_region = X[:, h_start:h_end, w_start:w_end]
+                output[:, i, j] = np.max(pool_region, axis=(1,2))
+                
+                # Store positions of max values for backprop
+                max_mask = (pool_region == output[:, i, j][:, np.newaxis, np.newaxis])
+                self.cache[:, h_start:h_end, w_start:w_end] += max_mask
+        
+        return output
+        
+    def backward(self, dY):
+        dX = np.zeros_like(self.last_input)
+        out_height = dY.shape[1]
+        out_width = dY.shape[2]
+        
+        # Distribute gradients to max positions
+        for i in range(out_height):
+            for j in range(out_width):
+                h_start = i * self.stride
+                h_end = h_start + self.pool_size
+                w_start = j * self.stride
+                w_end = w_start + self.pool_size
+                
+                dX[:, h_start:h_end, w_start:w_end] += (
+                    self.cache[:, h_start:h_end, w_start:w_end] * 
+                    dY[:, i, j][:, np.newaxis, np.newaxis]
+                )
+        
+        return dX
+
 class BatchNormalization(Layer):
     def __init__(self, epsilon=1e-8):
         super().__init__()
@@ -137,80 +249,45 @@ class BatchNormalization(Layer):
         self.cache = None
         
     def forward(self, X, training=True):
-        # Implementation of batch normalization
-        pass
+        if self.running_mean is None:
+            self.running_mean = np.zeros(X.shape[1:])
+            self.running_var = np.zeros(X.shape[1:])
+            
+        if training:
+            mean = np.mean(X, axis=0)
+            var = np.var(X, axis=0)
+            
+            # Update running statistics
+            self.running_mean = 0.9 * self.running_mean + 0.1 * mean
+            self.running_var = 0.9 * self.running_var + 0.1 * var
+        else:
+            mean = self.running_mean
+            var = self.running_var
+            
+        # Normalize
+        X_norm = (X - mean) / np.sqrt(var + self.epsilon)
+        out = self.gamma * X_norm + self.beta
+        
+        # Cache variables for backward pass
+        self.cache = (X, X_norm, mean, var)
+        
+        return out
         
     def backward(self, dY):
-        # Implementation of backward pass
-        pass
-
-class Model:
-    def __init__(self):
-        self.layers = []
-        self.loss = None
-        self.optimizer = None
-
-    def add(self, layer):
-        self.layers.append(layer)
-
-    def compile(self, loss, optimizer):
-        self.loss = loss
-        self.optimizer = optimizer
-
-    def forward(self, X, training=True):
-        for layer in self.layers:
-            if isinstance(layer, (Dropout, BatchNormalization)):
-                X = layer.forward(X, training)
-            else:
-                X = layer.forward(X)
-        return X
-
-    def backward(self, dY):
-        for layer in reversed(self.layers):
-            dY = layer.backward(dY)
-            
-    def get_params(self):
-        params = {}
-        for i, layer in enumerate(self.layers):
-            layer_params = layer.get_params()
-            if layer_params:
-                params[f'layer_{i}'] = layer_params
-        return params
+        X, X_norm, mean, var = self.cache
+        N = X.shape[0]
         
-    def set_params(self, params):
-        for i, layer in enumerate(self.layers):
-            if f'layer_{i}' in params:
-                layer.set_params(params[f'layer_{i}'])
+        # Gradient with respect to beta
+        self.d_beta = np.sum(dY, axis=0)
+        
+        # Gradient with respect to gamma
+        self.d_gamma = np.sum(dY * X_norm, axis=0)
+        
+        # Gradient with respect to X
+        dX_norm = dY * self.gamma
+        dvar = np.sum(dX_norm * (X - mean) * -0.5 * (var + self.epsilon)**(-1.5), axis=0)
+        dmean = np.sum(dX_norm * -1/np.sqrt(var + self.epsilon), axis=0)
+        dX = dX_norm / np.sqrt(var + self.epsilon) + dvar * 2 * (X - mean) / N + dmean / N
+        
+        return dX
 
-    def train(self, X, Y, epochs, batch_size):
-        for epoch in range(epochs):
-            total_loss = 0
-            total_acc = 0
-            num_batches = 0
-            
-            for i in range(0, len(X), batch_size):
-                X_batch = X[i:i+batch_size]
-                Y_batch = Y[i:i+batch_size]
-                
-                # Forward pass
-                Y_pred = self.forward(X_batch, training=True)
-                
-                # Calculate loss and accuracy
-                loss = self.loss.forward(Y_pred, Y_batch)
-                acc = np.mean(np.argmax(Y_pred, axis=1) == np.argmax(Y_batch, axis=1))
-                
-                # Backward pass
-                dY = self.loss.backward(Y_pred, Y_batch)
-                self.backward(dY)
-                
-                # Update parameters using optimizer
-                self.optimizer.update(self.get_params())
-                
-                total_loss += loss
-                total_acc += acc
-                num_batches += 1
-            
-            # Print epoch statistics
-            avg_loss = total_loss / num_batches
-            avg_acc = total_acc / num_batches
-            print(f'Epoch {epoch+1}/{epochs} Loss: {avg_loss:.4f} Accuracy: {avg_acc:.4f}')

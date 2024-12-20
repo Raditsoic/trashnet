@@ -1,0 +1,19 @@
+{
+    "architecture": "Custom CNN",
+    "input_size": [
+        224,
+        224
+    ],
+    "num_classes": 6,
+    "transformations": [
+        "RandomHorizontalFlip",
+        "RandomRotation(15)",
+        "ColorJitter(brightness=0.2, contrast=0.2)",
+        "Resize(224x224)",
+        "ToTensor"
+    ],
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "batch_size": 32,
+    "epochs": 10
+}
