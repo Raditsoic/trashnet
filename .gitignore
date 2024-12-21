@@ -1,8 +1,10 @@
 .env
+.secrets
 __pycache__
+models/**/**.keras
+models/**/**.pth
 wandb
 notebooks/test**
 notebooks/**.keras
 notebooks/model_artifacts
-models/**/**.keras
-models/**/**.pth
+.cache

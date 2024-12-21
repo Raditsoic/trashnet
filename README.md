@@ -10,7 +10,7 @@
 
 ### Workflow Explanation
 
-**Disclaimer**: To do this CI/CD we need `github lfs`, and for the time being my github lfs bandwith is full. So i will do the demo with local testing github action with `nektos/act`.
+**Disclaimer**: To do this CI/CD we need `github lfs` because some of the model is 100MB++, and for the time being my github lfs bandwith is full. So i will do the demo with local testing github action with `nektos/act`.
 
 Workflow will be split in 3 workflows, `ci.yml`, `cd-tag-ver.yml`, and  `cd-latest-ver.yml`
 
@@ -38,5 +38,39 @@ Workflow will be split in 3 workflows, `ci.yml`, `cd-tag-ver.yml`, and  `cd-late
         - push latest model: push latest model to the root directory of huggingface repository.
     - trigger: `pull request main`, `push main`
         ![cd-latest-ver](./documentation/workflow/cd-latest-ver.png)
-    
 
+### Workflow nektos/act (Optional Run workflow locally to avoid github LFS)
+
+Because of the limitation of github lfs, i use `nektos/act cli` and docker to simulate github action to automate model CI/CD. To simulate it locally we can:
+
+1. Install `nektos/act`
+    ```sh
+    curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo zsh
+    ```
+
+2. Add `act` path
+    ```sh
+    'export PATH="$PATH:$(pwd)/bin"' >> ~/.zshrc
+    source ~/.zshrc
+    ```
+
+3. Copy `.secret` and change token to simulate Github Secrets
+    ```sh
+    cp .secrets.example .secrets
+    ```
+
+4. Run jobs
+    ```sh
+    act -j <job-name> --secret-file .secrets
+    ```
+
+#### Demo
+
+![act-ci](./documentation/workflow/act-ci.png)
+<p align="center"><b>ci.yml</b></p>
+
+![act-cd-tag](./documentation/workflow/act-cd-tag-ver.png)
+<p align="center"><b>cd-tag-ver.yml</b></p>
+
+![act-cd-latest](./documentation/workflow/act-cd-latest.png)
+<p align="center"><b>cd-latest-ver.yml</b></p>
