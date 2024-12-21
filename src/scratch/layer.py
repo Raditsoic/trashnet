@@ -81,24 +81,8 @@ class Dropout(Layer):
     def backward(self, dY):
         return dY * self.mask / (1 - self.rate)
 
-import numpy as np
 
-class Layer:
-    def __init__(self):
-        self.last_input = None
-        
-    def forward(self, X):
-        raise NotImplementedError
-        
-    def backward(self, dY):
-        raise NotImplementedError
-        
-    def get_params(self):
-        return {}
-        
-    def set_params(self, params):
-        pass
-
+# Convolutions and pooling
 class Convolutional(Layer):
     def __init__(self, num_filters, filter_size, stride=1, padding=0):
         super().__init__()

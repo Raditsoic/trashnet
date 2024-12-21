@@ -8,7 +8,6 @@ dependencies = [
     "torch",
     "torchvision",
     "torchmetrics",
-    "pytorch-lightning",
     "pandas",
     "numpy",
     "scikit-learn",

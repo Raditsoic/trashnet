@@ -1,3 +1,8 @@
 .env
 __pycache__
 wandb
+notebooks/test**
+notebooks/**.keras
+notebooks/model_artifacts
+models/**/**.keras
+models/**/**.pth

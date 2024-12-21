@@ -16,11 +16,11 @@ jobs:
       # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          lfs: true  
+      #   with:
+      #     lfs: true  
 
-      - name: Pull LFS objects
-        run: git lfs pull  
+      # - name: Pull LFS objects
+      #   run: git lfs pull  
 
       # Set up Python
       - name: Set up Python

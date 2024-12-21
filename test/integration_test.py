@@ -1,15 +1,10 @@
-import sys
+import tensorflow as tf
+import numpy as np
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from src import TrashnetModel
-import torch
-import os
-from PIL import Image
-from torchvision import transforms
-import json
+from tensorflow.keras.utils import load_img, img_to_array
 import re
 
+# Labels for classification
 labels = {
     0: "cardboard",
     1: "glass",
@@ -19,6 +14,13 @@ labels = {
     5: "trash"
 }
 
+# Preprocess image to match model input
+def preprocess_image(image_path):
+    img = load_img(image_path, target_size=(224, 224))  # Resize
+    img_array = img_to_array(img) / 255.0              # Rescale
+    return np.expand_dims(img_array, axis=0)      
+
+# Load the latest model
 def get_latest_version(base_dir="models"):
     model_dirs = [d for d in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, d))]
     version_pattern = re.compile(r'model_(\d+\.\d+)')
@@ -35,52 +37,24 @@ def get_latest_version(base_dir="models"):
     latest_version = sorted(versions, key=lambda v: [int(x) for x in v.split('.')])[-1]
     return latest_version
 
-def load_model(version, model, base_dir="models"):
-    model_dir = os.path.join(base_dir, f"model_{version}")
-    model_path = os.path.join(model_dir, f"model_{version}.pth")
-    config_path = os.path.join(model_dir, "config.json")
-
-    # Load Weights
-    model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
-    model.eval()
-
-    # Load Config
-    with open(config_path, "r") as f:
-        config = json.load(f)
-
-    print(f"Loaded model version {version} with config: {config}")
-    return model, config
-
-# Test only latest model ver
 base_model_dir = "models"
 latest_version = get_latest_version(base_model_dir)
 
-model = TrashnetModel(num_classes=6)
-model, config = load_model(latest_version, model, base_model_dir)
-
-# Image preprocessing to match training
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-])
+model_path = os.path.join(base_model_dir, f"model_{latest_version}", f"model_{latest_version}.keras")
+model = tf.keras.models.load_model(model_path)
+print(f"Loaded model version: {latest_version}")
 
 # Dummy data for inference
 test_folder = "test/images"
 test_images = os.listdir(test_folder)
 
 # Inference on test images
-model.eval()
 for image_name in test_images:
     image_path = os.path.join(test_folder, image_name)
-    image = Image.open(image_path).convert("RGB")  
-
-    # Preprocess data
-    input_tensor = transform(image).unsqueeze(0) 
+    input_tensor = preprocess_image(image_path)  
 
     # Inference
-    with torch.no_grad():
-        output = model(input_tensor)
-        _, predicted_class = torch.max(output, 1)
+    predictions = model.predict(input_tensor)
+    predicted_class = np.argmax(predictions, axis=1)[0]
 
-    print(f"Image: {image_name}, Predicted Class: {labels[predicted_class.item()]}")
+    print(f"Image: {image_name}, Predicted Class: {labels[predicted_class]}")
