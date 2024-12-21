@@ -11,25 +11,31 @@ on:
 jobs:
   push-latest-model:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          lfs: true  
+      # Uncomment if use LFS
+      #   with:
+      #     lfs: true  
 
-      - name: Pull LFS objects
-        run: git lfs pull  
+      # - name: Pull LFS objects
+      #   run: git lfs pull  
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
-
-      - name: Install Hugging Face Hub
+          python-version: '3.12'
+      
+        # Install dependencies using nektos/act (If want to use local dependencies)
+      - name: Install dependencies using nektos/act
         run: |
-          python -m pip install --upgrade pip
-          pip install huggingface-hub
+          python -m pip install --no-index --find-links=.cache/cd/pip huggingface-hub
+      
+      # Install dependencies (Uncomment if want to install dependencies from PyPI and comment above)
+      # - name: Install Hugging Face Hub
+      #   run: |
+      #     python -m pip install --upgrade pip
+      #     pip install huggingface-hub
 
       - name: Determine Latest Model Version
         id: get-latest-version
@@ -41,7 +47,7 @@ jobs:
       - name: Copy and Rename Model File
         run: |
           mkdir -p "models/latest"
-          cp "models/${{ env.latest_model }}/${{ env.latest_model }}.pth" "models/latest/trashnet.pth"
+          cp "models/${{ env.latest_model }}/${{ env.latest_model }}.keras" "models/latest/trashnet.keras"
           cp "models/${{ env.latest_model }}/config.json" "models/latest/config.json"
           cp "models/${{ env.latest_model }}/metrics.json" "models/latest/metrics.json"
           cp "models/${{ env.latest_model }}/README.md" "models/latest/README.md"
@@ -54,4 +60,3 @@ jobs:
             --repo-type=model \
             --commit-message "feat: Update main with the latest model" \
             --token ${{ secrets.HF_TOKEN }}
-            

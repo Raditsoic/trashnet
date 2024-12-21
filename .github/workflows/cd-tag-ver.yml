@@ -12,33 +12,49 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          lfs: true  
+      # Uncomment if use LFS
+      #   with:
+      #     lfs: true  
 
-      - name: Pull LFS objects
-        run: git lfs pull  
+      # - name: Pull LFS objects
+      #   run: git lfs pull  
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
-
-      - name: Install Hugging Face Hub
+          python-version: '3.12'
+      
+        # # Install dependencies (If want to use local dependencies)
+      - name: Install dependencies using nektos/act
         run: |
-          python -m pip install --upgrade pip
-          pip install huggingface-hub
-
+          python -m pip install --no-index --find-links=.cache/cd/pip huggingface-hub
+      
+      # Install dependencies (Uncomment if want to install dependencies from PyPI and comment above)
+      # - name: Install Hugging Face Hub
+      #   run: |
+      #     python -m pip install --upgrade pip
+      #     pip install huggingface-hub
+      
+      # Extract Tag Version nektos/act (Comment if use LFS)
       - name: Extract Tag Version
         id: extract-version
         run: |
-          TAG=$(basename "$GITHUB_REF")
-          VERSION=${TAG#v}
+          VERSION=1.2 # Hardcoded version for demonstration purposes
           echo "version=$VERSION" >> $GITHUB_ENV
+      
+      # Extract Tag Version (Uncomment if use LFS)
+      # - name: Extract Tag Version
+      #   id: extract-version
+      #   run: |
+      #     echo "GITHUB_REF=$GITHUB_REF"
+      #     TAG=$(basename "$GITHUB_REF")
+      #     VERSION=${TAG#v}
+      #     echo "version=$VERSION" >> $GITHUB_ENV
 
       - name: Create Directory Structure and Copy Files
         run: |
           mkdir -p "models/trashnet_v${{ env.version }}"
-          cp "models/model_${{ env.version }}/model_${{ env.version }}.pth" "models/trashnet_v${{ env.version }}/trashnet_v${{ env.version }}.pth"
+          cp "models/model_${{ env.version }}/model_${{ env.version }}.keras" "models/trashnet_v${{ env.version }}/trashnet_v${{ env.version }}.keras"
           cp "models/model_${{ env.version }}/config.json" "models/trashnet_v${{ env.version }}/config.json"
           cp "models/model_${{ env.version }}/metrics.json" "models/trashnet_v${{ env.version }}/metrics.json"
           cp "models/model_${{ env.version }}/README.md" "models/trashnet_v${{ env.version }}/README.md"
