@@ -14,5 +14,6 @@ dependencies = [
     "matplotlib",
     "seaborn",
     "wandb",
+    "huggingface-hub",
 ]
 
