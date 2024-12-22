@@ -39,7 +39,7 @@ jobs:
       - name: Extract Tag Version
         id: extract-version
         run: |
-          VERSION=1.2 # Hardcoded version for demonstration purposes
+          VERSION=1.3 # Hardcoded version for demonstration purposes
           echo "version=$VERSION" >> $GITHUB_ENV
       
       # Extract Tag Version (Uncomment if use LFS)

@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class TrashnetModel(torch.nn.Module):
+class TrashnetTorchModel(torch.nn.Module):
     def __init__(self, num_classes):
-        super(TrashnetModel, self).__init__()
+        super(TrashnetTorchModel, self).__init__()
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1)  
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1) 
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2)  
